@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
   <base target="_top">
   <style>
@@ -368,15 +367,91 @@
       .getAvailableGoogleForm();
 
 
-      function submitForm() {
-        console.log(selectedEvents); // Eventlist pass in here successfully
-        // submit to generate google spreadSheet (Nominal Role)
-        // need to use google.script.run to call the function
+      // function submitForm() {
+      //   var eventList = []; // Use to store all eventDetails
+      //   console.log(selectedEvents); 
 
-        selectedEvents.forEach((event)=>{
-          google.script.run.getEventTimeslotLength(event.eventID)
-        });
+
+      //   selectedEvents.forEach((event)=>{
+      //     google.script.run
+      //       .withFailureHandler((e)=>{
+      //         console.log('Error: ' + e);
+      //       })
+      //       .withSuccessHandler(function(obj){
+      //         // console.log("Object: " + JSON.stringify(obj));
+      //         // obj return slow, how to resolve using async? 
+      //         eventList.push({
+      //           formID: event.eventID,
+      //           eventName: event.eventName,
+      //           timeslots: obj.arr,
+      //         })
+      //       })
+      //       .getEventTimeslotLength(event.eventID);
+      //     });
+
+      //     console.log("Testing: " + eventList);
+      //     eventList.forEach((eventDetails)=>{
+      //       console.log("eventDetails: ",JSON.stringify(eventDetails));
+      //     })
+      //   }
+
+    async function submitForm() {
+      var eventList = [];
+      console.log(selectedEvents);
+
+      for (const event of selectedEvents) {
+        try {
+          const obj = await getEventTimeslots(event.eventID);
+          eventList.push({
+            formID: event.eventID,
+            eventName: event.eventName,
+            timeslots: obj.arr,
+          });
+        } catch (error) {
+          console.log('Error: ' + error);
         }
+      }
+
+      console.log("Testing: ", eventList);
+      eventList.forEach((eventDetails) => {
+        console.log("eventDetails: ", JSON.stringify(eventDetails));
+        createNominalRole(eventDetails.eventName,eventDetails.timeslots);
+        // eventDetails:  {"formID":"1OGDtTWz7nI5Ow_LXDF32dYQWgz4JK3_VG444ItNfRS0","eventName":"Valorant Session","timeslots":["2023-05-02 || 05:24 - 05:24","2023-05-17 || 10:20 - 00:20"]}
+        // eventDetails:  {"formID":"10RDg34QYrTKCaVeP_G5Pycpra_npFj2FqUnjKz-XVZY","eventName":"Testing 1","timeslots":["2023-05-19 || 04:22 - 08:19","2023-05-03 || 08:19 - 09:19","2023-06-08 || 04:24 - 09:20"]}
+      });
+
+
+      // Over here edit the newly created nominal role?
+      // Or inside the forEach loop
+    }
+  
+  function createNominalRole(eventName, timeslots){
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler((obj) => {
+          resolve(obj);
+        })
+        .withFailureHandler((error) => {
+          reject(error);
+        })
+        .copyNominalRolePrime(eventName, timeslots);
+    });
+  }
+
+  function getEventTimeslots(eventID) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler((obj) => {
+          resolve(obj);
+        })
+        .withFailureHandler((error) => {
+          reject(error);
+        })
+        .getEventTimeslots(eventID);
+    });
+  }
+
+
   </script>
 </body>
 
